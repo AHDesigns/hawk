@@ -1,0 +1,19 @@
+{
+  "name": "panda",
+  "scripts": {
+    "dev": "node src/server.js",
+    "ts": "tsc --noEmit",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.0.0-beta.10",
+    "chokidar": "^3.5.2",
+    "esbuild": "^0.13.15",
+    "live-server": "^1.2.1",
+    "prettier": "^2.4.1",
+    "typescript": "^4.5.2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.0.0-beta.8"
+  }
+}

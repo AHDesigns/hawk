@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "strictPropertyInitialization": true,
+
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+
+    "isolatedModules": true,
+    "esModuleInterop": true
+    // "skipLibCheck": true,
+    // "resolveJsonModule": true,
+
+    // "baseUrl": ".",
+    // "types": ["jest"],
+    // "paths": {
+    //   "@shared/*": ["shared/*"],
+    //   "@electron/*": ["electron/*"],
+    //   "@client/*": ["client/*"],
+    //   "@test/*": ["testHelpers/*"]
+    // },
+    // "jsx": "react"
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": ["node_modules"]
+}
