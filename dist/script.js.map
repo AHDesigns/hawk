@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../src/bar.ts", "../src/foo.ts", "../src/index.ts"],
-  "sourcesContent": ["export const foo = () => {\n  console.log('fe')\n  console.log('fo')\n  console.log('fum')\n}\n", "import { foo } from './bar';\n\nexport function bar() {\n  foo();\n  return \"\";\n}\n", "import { bar } from \"./foo\";\nconsole.log(\"hello world!\");\n\nfunction foo(n: number): number {\n  console.log(bar());\n\n  return n + 4;\n}\n\nfoo(3);\n"],
-  "mappings": ";;AAAO,MAAM,MAAM,MAAM;AACvB,YAAQ,IAAI;AACZ,YAAQ,IAAI;AACZ,YAAQ,IAAI;AAAA;;;ACDP,iBAAe;AACpB;AACA,WAAO;AAAA;;;ACHT,UAAQ,IAAI;AAEZ,gBAAa,GAAmB;AAC9B,YAAQ,IAAI;AAEZ,WAAO,IAAI;AAAA;AAGb,OAAI;",
-  "names": []
-}
