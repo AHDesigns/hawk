@@ -1,50 +1,45 @@
-import {
-  Component,
-  createEffect,
-  createResource,
-  createSignal,
-  Show,
-} from "solid-js";
-import { invoke } from "@tauri-apps/api/tauri";
+import { Component, createSignal, Index, Show } from "solid-js";
 
-import logo from "./logo.svg";
 import styles from "./App.module.css";
+import b from "./bridge";
+import { Buffer } from "./types";
+
+b.windowFn({ x: 3, pointInSpace: { x: 3, y: 4 } });
 
 const App: Component = () => {
-  const [data, setData] = createSignal(1);
-  const [finished, setFinished] = createSignal(false);
+  const [buffer, setBuffer] = createSignal<null | Buffer>(null);
 
-  createEffect(() => {
-    setTimeout(() => {
-      setFinished(true);
-    }, 1000);
-  });
+  function openFile() {
+    b.openBuffer({ path: "/Users/adh23/dev/panda/package.json" })
+      .then((myb) => {
+        b.log(myb.lines);
+        setBuffer(myb);
+      })
+      .catch((e) => alert(e));
+  }
 
-  createResource(data, (d) => {
-    return finished()
-      ? Promise.resolve(0)
-      : invoke("my_custom_command", { num: d }).then((d) =>
-          setData(d as number)
-        );
-  });
+  const w = Object.keys(window);
 
   return (
     <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid {data()}
-        </a>
-        <Show when={finished()}>rendered {data()} updates in 1 second</Show>
-      </header>
+      <Show when={window.__TAURI__}>{() => <div>in tauri</div>}</Show>
+      <Index each={w}>{(l) => <p>{l}</p>}</Index>
+      <button onClick={openFile}>open file</button>
+      <Show when={buffer()}>{(b) => <EditableBuffer content={b} />}</Show>
+    </div>
+  );
+};
+
+const EditableBuffer: Component<{ content: Buffer }> = ({ content }) => {
+  return (
+    <div class={styles.buffer}>
+      <Index each={content.lines}>
+        {(item) => (
+          <div>
+            <code>{item()}</code>
+          </div>
+        )}
+      </Index>
     </div>
   );
 };
