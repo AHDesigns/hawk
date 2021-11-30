@@ -53,7 +53,7 @@ const fakeBridge: Bridge = {
         '    "solid-js": "^1.1.3"',
         "  }",
         "}",
-      ],
+      ].map((line) => line.split("")),
     });
   },
   async windowFn() {

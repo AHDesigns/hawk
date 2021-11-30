@@ -1,4 +1,4 @@
 export interface Buffer {
   name: string;
-  lines: Array<string>;
+  lines: Array<Array<string>>;
 }
