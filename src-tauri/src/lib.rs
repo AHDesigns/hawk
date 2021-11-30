@@ -1,6 +1,10 @@
-use std::{fs::read_to_string, path::Path};
-
 use serde::{Deserialize, Serialize};
+use std::{fs::read_to_string, path::Path};
+use tree_sitter::{Language, Parser};
+
+extern "C" {
+  fn tree_sitter_javascript() -> Language;
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PointInSpace {
@@ -29,4 +33,14 @@ pub fn open_buffer(path: &Path) -> Result<Buffer, String> {
       lines: buf.lines().map(|l| l.to_string()).collect(),
     }),
   }
+}
+
+fn highlight() {
+  let mut parser = Parser::new();
+  let language = unsafe { tree_sitter_javascript() };
+  parser.set_language(language).unwrap();
+  let source_code = "let x = 4";
+  let tree = parser.parse(source_code, None).unwrap();
+  let root_node = tree.root_node();
+  println!("{}", &root_node.text)
 }
