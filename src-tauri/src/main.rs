@@ -3,12 +3,8 @@
   windows_subsystem = "windows"
 )]
 
-mod lib;
-
+use hawk_core::{Buffer, PointInSpace};
 use std::path::Path;
-
-use app::Buffer;
-use lib::PointInSpace;
 
 fn main() {
   println!("started!");
@@ -35,10 +31,10 @@ fn my_custom_command(num: u32) -> u32 {
 
 #[tauri::command]
 fn window_fn(window: tauri::Window, x: u32, point_in_space: PointInSpace) {
-  lib::window_fn(window.label(), x, point_in_space)
+  hawk_core::window_fn(window.label(), x, point_in_space)
 }
 
 #[tauri::command]
 fn open_buffer(path: String) -> Result<Buffer, String> {
-  app::open_buffer(&Path::new(&path))
+  hawk_core::open_buffer(&Path::new(&path))
 }

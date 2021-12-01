@@ -13,13 +13,12 @@ build = "src/build.rs"
 
 [build-dependencies]
 tauri-build = { version = "1.0.0-beta.4" }
-cc="*"
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0-beta.8", features = ["api-all"] }
-tree-sitter = "0.20.1"
+hawk-core = { path = "../../hawk-core" }
 
 [features]
 default = [ "custom-protocol" ]

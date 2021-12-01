@@ -18,7 +18,7 @@ const App: Component = () => {
   const [buffer, setBuffer] = createSignal<null | Buffer>(null);
 
   function openFile() {
-    b.openBuffer({ path: "/Users/adh23/dev/peregrine/package.json" })
+    b.openBuffer({ path: "/Users/adh23/dev/hawk/package.json" })
       .then((myb) => {
         b.log(myb.lines);
         setBuffer(myb);

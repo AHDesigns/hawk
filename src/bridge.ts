@@ -31,7 +31,7 @@ const fakeBridge: Bridge = {
       name: "package.json",
       lines: [
         "{",
-        '  "name": "panda",',
+        '  "name": "hawk-gui",',
         '  "scripts": {',
         '    "tauri": "tauri",',
         '    "dev": "tauri dev",',

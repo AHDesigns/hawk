@@ -42,12 +42,11 @@ checksum = "62e1f47f7dc0422027a4e370dd4548d4d66b26782e513e98dca1e689e058a80e"
 name = "app"
 version = "0.1.0"
 dependencies = [
- "cc",
+ "hawk-core",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
- "tree-sitter",
 ]
 
 [[package]]
@@ -1235,6 +1234,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "hawk-core"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "serde",
+ "serde_json",
+ "tree-sitter",
 ]
 
 [[package]]
