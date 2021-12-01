@@ -25,6 +25,7 @@ pub struct Buffer {
 }
 
 pub fn open_buffer(path: &Path) -> Result<Buffer, String> {
+  highlight();
   match read_to_string(path) {
     Err(_) => Err(String::from(format!("could not read path: {:?}", path))),
     Ok(buf) => Ok(Buffer {
@@ -42,5 +43,5 @@ fn highlight() {
   let source_code = "let x = 4";
   let tree = parser.parse(source_code, None).unwrap();
   let root_node = tree.root_node();
-  println!("{}", &root_node.text)
+  println!("{}", &root_node.to_sexp())
 }
