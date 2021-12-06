@@ -3,7 +3,10 @@
   windows_subsystem = "windows"
 )]
 
-use hawk_core::{Buffer, PointInSpace};
+use hawk_core::{
+  buffers::{self, Buffer},
+  PointInSpace,
+};
 use std::path::Path;
 
 fn main() {
@@ -36,5 +39,5 @@ fn window_fn(window: tauri::Window, x: u32, point_in_space: PointInSpace) {
 
 #[tauri::command]
 fn open_buffer(path: String) -> Result<Buffer, String> {
-  hawk_core::open_buffer(&Path::new(&path))
+  buffers::open_buffer(&Path::new(&path))
 }
