@@ -1,11 +1,11 @@
 [package]
-name = "app"
+name = "hawk-gui"
 version = "0.1.0"
-description = "A Tauri App"
+description = "Hawk GUI text editor"
 authors = ["you"]
 license = ""
 repository = ""
-default-run = "app"
+default-run = "hawk-gui"
 edition = "2018"
 build = "src/build.rs"
 
@@ -18,7 +18,7 @@ tauri-build = { version = "1.0.0-beta.4" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0-beta.8", features = ["api-all"] }
-hawk-core = { path = "../../hawk-core" }
+hawk = { path = "../hawk" }
 
 [features]
 default = [ "custom-protocol" ]

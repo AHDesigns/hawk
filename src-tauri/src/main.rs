@@ -3,7 +3,7 @@
   windows_subsystem = "windows"
 )]
 
-use hawk_core::{
+use hawk::{
   buffers::{self, Buffer},
   PointInSpace,
 };
@@ -34,7 +34,7 @@ fn my_custom_command(num: u32) -> u32 {
 
 #[tauri::command]
 fn window_fn(window: tauri::Window, x: u32, point_in_space: PointInSpace) {
-  hawk_core::window_fn(window.label(), x, point_in_space)
+  hawk::window_fn(window.label(), x, point_in_space)
 }
 
 #[tauri::command]
