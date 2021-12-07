@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 hawk = { path = "../hawk" }
+crossterm = "0.22"

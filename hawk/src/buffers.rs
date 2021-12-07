@@ -8,7 +8,6 @@ pub struct Buffer {
 }
 
 pub fn open_buffer(path: &Path) -> Result<Buffer, String> {
-  println!("opening buffer");
   match read_to_string(path) {
     Err(_) => Err(String::from(format!("could not read path: {:?}", path))),
     Ok(buf) => Ok(Buffer {
