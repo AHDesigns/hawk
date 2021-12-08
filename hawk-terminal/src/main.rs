@@ -5,7 +5,7 @@ use crossterm::terminal::{
   disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::{ExecutableCommand, QueueableCommand};
-use std::io::{self, Error, Write};
+use std::io::{self, stdout, Error, Write};
 use std::path::Path;
 
 mod buffers {
@@ -41,17 +41,44 @@ mod buffers {
   }
 }
 
-use buffers::Buffer;
+mod debugger {
+  use std::io::Write;
 
-/// This struct holds the state of the app.
-struct App {
-  buffers: Vec<Buffer>,
+  pub struct Debugger<T: Write> {
+    transport: T,
+  }
+
+  impl<T> Debugger<T>
+  where
+    T: Write,
+  {
+    pub fn info(&self, msg: &[u8]) {
+      self.transport.write(msg);
+    }
+  }
 }
 
-impl App {
+use buffers::Buffer;
+use debugger::Debugger;
+
+/// This struct holds the state of the app.
+struct App<T: Write> {
+  buffers: Vec<Buffer>,
+  debugger: Option<Debugger<T>>,
+}
+
+impl<T> App<T>
+where
+  T: Write,
+{
   fn new() -> Self {
+    let mut debugger: Debugger<io::Stdout> = Debugger {
+      transport: stdout(),
+    };
+
     App {
       buffers: Vec::new(),
+      debugger: Some(debugger),
     }
   }
 
@@ -72,7 +99,7 @@ fn main() -> Result<(), Error> {
     .queue(Hide)?
     .flush()?;
 
-  let mut app = App::new();
+  let mut app: App<std::io::Stdout> = App::new();
 
   app.create_buffer("scratch".to_string());
 
