@@ -5,6 +5,7 @@ use crossterm::terminal::{
   disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::{ExecutableCommand, QueueableCommand};
+use std::fs::File;
 use std::io::{self, stdout, Error, Write};
 use std::path::Path;
 
@@ -48,12 +49,13 @@ mod debugger {
     transport: T,
   }
 
-  impl<T> Debugger<T>
-  where
-    T: Write,
+  impl<T: Write> Debugger<T>
   {
-    pub fn info(&self, msg: &[u8]) {
-      self.transport.write(msg);
+    pub fn new(transport: T) -> Self {
+      Debugger { transport }
+    }
+    pub fn info(&mut self, msg: &[u8]) {
+      &self.transport.write_all(msg);
     }
   }
 }
@@ -64,26 +66,33 @@ use debugger::Debugger;
 /// This struct holds the state of the app.
 struct App<T: Write> {
   buffers: Vec<Buffer>,
-  debugger: Option<Debugger<T>>,
+  debugger: Debugger<T>,
 }
 
-impl<T> App<T>
-where
-  T: Write,
-{
-  fn new() -> Self {
-    let mut debugger: Debugger<io::Stdout> = Debugger {
-      transport: stdout(),
-    };
-
+impl<T: Write> App<T> {
+  fn new(transport: T) -> Self {
     App {
       buffers: Vec::new(),
-      debugger: Some(debugger),
+      debugger: Debugger::new(transport),
     }
   }
 
   fn create_buffer(&mut self, name: String) {
     self.buffers.push(Buffer::new(name));
+  }
+}
+
+#[cfg(debug_assertions)]
+mod stuff {
+  pub fn cfgtester() {
+    println!("goodbye!")
+  }
+}
+
+#[cfg(not(debug_assertions))]
+mod stuff {
+  pub fn cfgtester() {
+    println!("hello!")
   }
 }
 
@@ -99,7 +108,11 @@ fn main() -> Result<(), Error> {
     .queue(Hide)?
     .flush()?;
 
-  let mut app: App<std::io::Stdout> = App::new();
+  let debug_file = File::create("log.txt").expect("could not create debug log file");
+
+  let mut app = App::new(debug_file);
+
+  app.debugger.info("app started!".as_bytes());
 
   app.create_buffer("scratch".to_string());
 
@@ -160,6 +173,8 @@ fn main() -> Result<(), Error> {
 
   stdout.execute(LeaveAlternateScreen)?.execute(Show)?;
   disable_raw_mode()?;
+
+  stuff::cfgtester();
   Ok(())
 }
 
