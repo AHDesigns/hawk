@@ -42,38 +42,17 @@ mod buffers {
   }
 }
 
-mod debugger {
-  use std::io::Write;
-
-  pub struct Debugger<T: Write> {
-    transport: T,
-  }
-
-  impl<T: Write> Debugger<T>
-  {
-    pub fn new(transport: T) -> Self {
-      Debugger { transport }
-    }
-    pub fn info(&mut self, msg: &[u8]) {
-      &self.transport.write_all(msg);
-    }
-  }
-}
-
 use buffers::Buffer;
-use debugger::Debugger;
 
 /// This struct holds the state of the app.
-struct App<T: Write> {
+struct App {
   buffers: Vec<Buffer>,
-  debugger: Debugger<T>,
 }
 
-impl<T: Write> App<T> {
-  fn new(transport: T) -> Self {
+impl App {
+  fn new() -> Self {
     App {
       buffers: Vec::new(),
-      debugger: Debugger::new(transport),
     }
   }
 
@@ -82,21 +61,19 @@ impl<T: Write> App<T> {
   }
 }
 
-#[cfg(debug_assertions)]
-mod stuff {
-  pub fn cfgtester() {
-    println!("goodbye!")
-  }
-}
-
-#[cfg(not(debug_assertions))]
-mod stuff {
-  pub fn cfgtester() {
-    println!("hello!")
-  }
-}
+use log::{debug, error, info, log_enabled, warn, Level};
+use simplelog::*;
 
 fn main() -> Result<(), Error> {
+  CombinedLogger::init(vec![WriteLogger::new(
+    LevelFilter::Debug,
+    Config::default(),
+    File::create("log.txt").unwrap(),
+  )])
+  .unwrap();
+
+  info!("app starting");
+
   let mut stdout = io::stdout();
 
   enable_raw_mode()?;
@@ -108,11 +85,7 @@ fn main() -> Result<(), Error> {
     .queue(Hide)?
     .flush()?;
 
-  let debug_file = File::create("log.txt").expect("could not create debug log file");
-
-  let mut app = App::new(debug_file);
-
-  app.debugger.info("app started!".as_bytes());
+  let mut app = App::new();
 
   app.create_buffer("scratch".to_string());
 
@@ -124,6 +97,7 @@ fn main() -> Result<(), Error> {
     if let Event::Key(key) = event::read()? {
       match key.code {
         KeyCode::Char('q') => {
+          info!("quiting on char q");
           break;
         }
         // KeyCode::Char('l') => match hawk::buffers::open_buffer(Path::new("Cargo.toml")) {
@@ -174,7 +148,6 @@ fn main() -> Result<(), Error> {
   stdout.execute(LeaveAlternateScreen)?.execute(Show)?;
   disable_raw_mode()?;
 
-  stuff::cfgtester();
   Ok(())
 }
 
