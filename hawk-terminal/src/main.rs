@@ -1,48 +1,13 @@
-use crossterm::cursor::{Hide, MoveDown, MoveTo, MoveToNextLine, Show};
 use crossterm::event::{self, Event, KeyCode};
-use crossterm::style::Print;
-use crossterm::terminal::{
-  disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
-};
-use crossterm::{ExecutableCommand, QueueableCommand};
-use std::fs::File;
-use std::io::{self, stdout, Error, Write};
-use std::path::Path;
+use std::io::Error;
 
-mod buffers {
-  pub struct Buffer {
-    pub name: String,
-    pub text: Vec<String>,
-  }
-
-  impl Buffer {
-    pub fn new(name: String) -> Self {
-      Buffer {
-        name,
-        text: Vec::new(),
-      }
-    }
-
-    pub fn append_text(&mut self, txt: String) {
-      match self.text.is_empty() {
-        true => self.text.push(txt),
-        false => {
-          let last_index = self.text.len();
-          match self.text.get_mut(last_index - 1) {
-            Some(last_line) => last_line.push_str(&txt),
-            None => panic!("shouldn't happen"),
-          }
-        }
-      }
-    }
-
-    pub fn line_break(&mut self) {
-      self.text.push("".to_string())
-    }
-  }
-}
+mod buffers;
+mod logger;
+mod ui;
 
 use buffers::Buffer;
+use logger::*;
+use ui::Renderer;
 
 /// This struct holds the state of the app.
 struct App {
@@ -61,29 +26,12 @@ impl App {
   }
 }
 
-use log::{debug, error, info, log_enabled, warn, Level};
-use simplelog::*;
-
 fn main() -> Result<(), Error> {
-  CombinedLogger::init(vec![WriteLogger::new(
-    LevelFilter::Debug,
-    Config::default(),
-    File::create("log.txt").unwrap(),
-  )])
-  .unwrap();
+  init_logger();
 
   info!("app starting");
 
-  let mut stdout = io::stdout();
-
-  enable_raw_mode()?;
-
-  stdout
-    .queue(EnterAlternateScreen)?
-    .queue(Clear(ClearType::All))?
-    .queue(MoveTo(0, 0))?
-    .queue(Hide)?
-    .flush()?;
+  let mut screen = Renderer::new()?;
 
   let mut app = App::new();
 
@@ -100,57 +48,23 @@ fn main() -> Result<(), Error> {
           info!("quiting on char q");
           break;
         }
-        // KeyCode::Char('l') => match hawk::buffers::open_buffer(Path::new("Cargo.toml")) {
-        //   Ok(buff) => {
-        //     for line in buff.lines {
-        //       stdout.queue(Print(line))?.queue(MoveToNextLine(1))?;
-        //     }
-        //   }
-        //   Err(_) => {}
-        // },
         KeyCode::Enter => {
           &buff.line_break();
         }
         KeyCode::Char(k) => {
           &buff.append_text(k.to_string());
         }
-        // KeyCode::Down => {
-        //   y = y + 1;
-        // }
-        // KeyCode::Up => {
-        //   if y > 0 {
-        //     y = y - 1;
-        //   }
-        // }
-        // KeyCode::Right => {
-        //   x = x + 1;
-        // }
-        // KeyCode::Left => {
-        //   x = x - 1;
-        // }
+        KeyCode::Backspace => {
+          debug!("backspace");
+        }
         _ => {}
       }
     }
 
-    stdout.queue(Clear(ClearType::All))?.queue(MoveTo(0, 0))?;
-
-    buff.text.iter().enumerate().for_each(|(i, line)| {
-      stdout
-        .queue(MoveTo(0, i as u16))
-        .unwrap()
-        .queue(Print(line))
-        .unwrap();
-    });
-
-    stdout.queue(Hide)?.flush()?;
+    screen.redraw(buff)?;
   }
 
-  stdout.execute(LeaveAlternateScreen)?.execute(Show)?;
-  disable_raw_mode()?;
+  screen.cleanup()?;
 
   Ok(())
 }
-
-// fn highlight_toml(lines: Vec<&String>) -> Vec<u8> {
-
-// }
