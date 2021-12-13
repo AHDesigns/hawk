@@ -7,6 +7,13 @@ edition = "2018"
 
 [dependencies]
 hawk = { path = "../hawk" }
+
 crossterm = "0.22"
+# Logging / debugging
 log = "0.4.14"
 simplelog = "^0.10.0"
+
+# parrallel stuff
+num_cpus = "1.13.0"
+threadpool = "1.8.1"
+crossbeam = "0.8.1"

@@ -1,15 +1,23 @@
 use crate::buffers::Buffer;
-use crossterm::cursor::{Hide, MoveDown, MoveTo, MoveToNextLine, Show};
+use crossterm::cursor::{MoveTo, Show};
 use crossterm::style::Print;
 use crossterm::terminal::{
-  disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnterAlternateScreen,
+  self, disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnterAlternateScreen,
   LeaveAlternateScreen,
 };
 use crossterm::{ExecutableCommand, QueueableCommand};
-use std::io::{self, stdout, Error, Stdout, Write};
+use log::{debug, info};
+use std::io::{self, Error, Stdout, Write};
+
+#[derive(Debug)]
+struct FrameSize {
+  columns: u16,
+  rows: u16,
+}
 
 pub struct Renderer {
   stdout: Stdout,
+  frame_size: FrameSize,
 }
 
 impl Renderer {
@@ -18,6 +26,11 @@ impl Renderer {
 
     enable_raw_mode()?;
 
+    let (columns, rows) = terminal::size().expect("could not get terminal size");
+
+    let frame_size = FrameSize { columns, rows };
+    info!("frame size {:?}", frame_size);
+
     stdout
       .queue(EnterAlternateScreen)?
       .queue(DisableLineWrap)?
@@ -25,7 +38,7 @@ impl Renderer {
       .queue(MoveTo(0, 0))?
       .flush()?;
 
-    Ok(Renderer { stdout })
+    Ok(Renderer { stdout, frame_size })
   }
 
   pub fn cleanup(mut self) -> Result<(), Error> {
@@ -42,11 +55,24 @@ impl Renderer {
       .queue(MoveTo(0, 0))?;
 
     buff.text.iter().enumerate().for_each(|(i, line)| {
+      let end = {
+        let size = line.len();
+        let last_char = self.frame_size.columns as usize;
+        if size > last_char {
+          last_char
+        } else {
+          size
+        }
+      };
+
+      debug!("printing to char {}", end);
+
+      let visible_line = &line[0..end];
       self
         .stdout
         .queue(MoveTo(0, i as u16))
         .unwrap()
-        .queue(Print(line))
+        .queue(Print(visible_line))
         .unwrap();
     });
 

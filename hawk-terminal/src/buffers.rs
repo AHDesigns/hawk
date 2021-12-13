@@ -24,6 +24,14 @@ impl Buffer {
     }
   }
 
+  pub fn remove_text(&mut self, line: u8) {
+    if !self.text.is_empty() {
+      if let Some(ln) = self.text.get_mut(line as usize) {
+        ln.pop();
+      }
+    }
+  }
+
   pub fn line_break(&mut self) {
     self.text.push("".to_string())
   }
