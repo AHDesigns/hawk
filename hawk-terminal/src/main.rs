@@ -1,6 +1,6 @@
-use crossbeam::channel::unbounded;
-use crossterm::event::{self, Event, KeyCode};
-use std::{io::Error, thread, time::Duration};
+use crossbeam::channel::{unbounded, Sender};
+use crossterm::Result as UiResult;
+use std::{thread, time::Duration};
 use threadpool::ThreadPool;
 
 mod buffers;
@@ -29,7 +29,7 @@ impl App {
 }
 
 #[derive(Debug)]
-enum Direction {
+pub enum Direction {
   Up,
   Down,
   Forward,
@@ -37,7 +37,7 @@ enum Direction {
 }
 
 #[derive(Debug)]
-enum HawkEvent {
+pub enum HawkEvent {
   Quit,
   Insert(char),
   Enter,
@@ -47,10 +47,49 @@ enum HawkEvent {
   Slow,
 }
 
+mod ux {
+  use std::time::Duration;
+
+  use crossterm::event::{self, Event, KeyCode};
+  use log::warn;
+
+  use crate::HawkEvent::{self, *};
+
+  pub fn poll_user_input() -> Option<HawkEvent> {
+    if event::poll(Duration::from_millis(16)).unwrap() {
+      match event::read().unwrap() {
+        Event::Mouse(_) => None,
+        Event::Resize(w, h) => {
+          warn!("screen resized {} {}", w, h);
+          None
+        }
+        Event::Key(key) => match key.code {
+          KeyCode::Enter => Some(Enter),
+          KeyCode::Char('s') => Some(Slow),
+          KeyCode::Char('q') => Some(Quit),
+          KeyCode::Char(k) => Some(Insert(k)),
+          KeyCode::Backspace => Some(Delete),
+          _ => {
+            warn!("key was not handled {:?}", key);
+            None
+          }
+        },
+      }
+    } else {
+      None
+    }
+  }
+}
+
+struct Cursor {
+  pub row: u8,
+  pub column: u8,
+}
+
 extern crate num_cpus;
 use HawkEvent::*;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
   init_logger();
 
   info!("app starting");
@@ -61,96 +100,105 @@ fn main() -> Result<(), Error> {
 
   app.create_buffer("scratch".to_string());
 
-  let active_buffer = 0;
-  let mut cursor: (u8, u8) = (0, 0);
+  let active_buffer: usize = 0;
+  let mut cursor = Cursor { row: 0, column: 0 };
 
   let (user_sender, event_reciever) = unbounded::<HawkEvent>();
   let worker_sender = user_sender.clone();
 
-  let n_workers = num_cpus::get() - 2;
+  let n_workers = num_cpus::get() - 1;
+
   info!("workers: {}", n_workers);
+
   let pool = ThreadPool::new(n_workers);
 
-  thread::spawn(move || {
-    info!("spawned input handler thread");
-
-    loop {
-      match event::read() {
-        Ok(Event::Key(key)) => match key.code {
-          KeyCode::Enter => {
-            user_sender.send(Enter).unwrap();
-          }
-          KeyCode::Char('s') => {
-            user_sender.send(Slow).unwrap();
-          }
-          KeyCode::Char('q') => {
-            user_sender.send(Quit).unwrap();
-          }
-          KeyCode::Char(k) => {
-            user_sender.send(Insert(k)).unwrap();
-          }
-          KeyCode::Backspace => {
-            user_sender.send(Delete).unwrap();
-          }
-          _ => {
-            warn!("event was not handled");
-          }
-        },
-        _ => {}
-      }
-    }
-  });
-
   loop {
-    let buff = app.buffers.get_mut(active_buffer).unwrap();
+    let e = ux::poll_user_input();
 
-    match event_reciever.recv() {
-      Ok(e) => match e {
-        HawkEvent::Quit => {
-          info!("quiting on char q");
-          break;
-        }
-        Slow => {
-          let sender = worker_sender.clone();
-
-          pool.execute(move || {
-            info!("spawned worker thread");
-
-            thread::sleep(Duration::from_millis(5000));
-            info!("done!");
-            sender.send(Ping).unwrap();
-          })
-        }
-        Enter => {
-          cursor = {
-            let (r, c) = cursor;
-            (r + 1, c)
-          };
-          &buff.line_break();
-        }
-        Insert(k) => {
-          cursor = {
-            let (r, c) = cursor;
-            (r, c + 1)
-          };
-          buff.append_text(k.to_string());
-        }
-        Delete => {
-          &buff.remove_text(cursor.0);
-        }
-        _ => {
-          warn!("unhandled Hawk event: {:?}", e)
-        }
-      },
-      Err(_) => {
-        panic!("thread error")
+    match e {
+      Some(HawkEvent::Quit) => {
+        info!("quiting");
+        break;
       }
-    }
-
-    renderer.redraw(buff)?;
+      Some(he) => handle_event(
+        &mut app,
+        &pool,
+        &mut renderer,
+        he,
+        active_buffer,
+        &worker_sender,
+        &mut cursor,
+      )?,
+      None => {
+        if let Ok(he) = event_reciever.try_recv() {
+          match he {
+            HawkEvent::Quit => {
+              info!("quiting");
+              break;
+            }
+            _ => handle_event(
+              &mut app,
+              &pool,
+              &mut renderer,
+              he,
+              active_buffer,
+              &worker_sender,
+              &mut cursor,
+            )?,
+          };
+        };
+      }
+    };
   }
 
   renderer.cleanup()?;
 
   Ok(())
+}
+
+fn handle_event(
+  app: &mut App,
+  pool: &ThreadPool,
+  renderer: &mut Renderer,
+  e: HawkEvent,
+  active_buffer: usize,
+  worker_sender: &Sender<HawkEvent>,
+  cursor: &mut Cursor,
+) -> UiResult<()> {
+  let buff = app.buffers.get_mut(active_buffer).unwrap();
+
+  match e {
+    Slow => {
+      let sender = worker_sender.clone();
+
+      pool.execute(move || {
+        info!("spawned worker thread");
+
+        thread::sleep(Duration::from_millis(5000));
+        info!("done!");
+        sender.send(Ping).unwrap();
+      });
+
+      Ok(())
+    }
+    Enter => {
+      cursor.row += 1;
+      &buff.line_break();
+      renderer.redraw(buff)
+    }
+    Insert(k) => {
+      cursor.column += 1;
+      buff.append_text(k.to_string());
+      renderer.redraw(buff)
+    }
+    Delete => {
+      &buff.remove_text(cursor.row);
+      renderer.redraw(buff)
+    }
+    _ => {
+      warn!("unhandled Hawk event: {:?}", e);
+
+      Ok(())
+    }
+  }
 }
