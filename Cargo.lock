@@ -1280,8 +1280,10 @@ name = "hawk"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "log",
  "serde",
  "serde_json",
+ "simplelog",
  "tree-sitter",
 ]
 
@@ -1303,9 +1305,7 @@ dependencies = [
  "crossbeam",
  "crossterm",
  "hawk",
- "log",
  "num_cpus",
- "simplelog",
  "threadpool",
 ]
 

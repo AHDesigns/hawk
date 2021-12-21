@@ -6,6 +6,7 @@ extern "C" {
 }
 
 pub mod buffers;
+pub mod logger;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PointInSpace {
@@ -46,6 +47,43 @@ mod tests {
   fn open_buffer_test() {
     let buff = buffers::open_buffer(&Path::new("./test/buffers/simple.txt")).unwrap();
     assert_eq!(buff.name, "simple.txt");
-    assert_eq!(buff.lines, vec!["here is some text"]);
+    assert_eq!(buff.text, vec!["here is some text"]);
   }
+}
+
+use buffers::Buffer;
+/// This struct holds the state of the app.
+pub struct App {
+  pub buffers: Vec<Buffer>,
+}
+
+impl App {
+  pub fn new() -> Self {
+    App {
+      buffers: Vec::new(),
+    }
+  }
+
+  pub fn create_buffer(&mut self, name: String) {
+    self.buffers.push(Buffer::new(name));
+  }
+}
+
+#[derive(Debug)]
+pub enum Direction {
+  Up,
+  Down,
+  Forward,
+  Back,
+}
+
+#[derive(Debug)]
+pub enum HawkEvent {
+  Quit,
+  Insert(char),
+  Enter,
+  Delete,
+  Move(Direction),
+  Ping,
+  Slow,
 }

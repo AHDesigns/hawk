@@ -10,4 +10,5 @@ pub fn init_logger() {
     File::create("log.txt").unwrap(),
   )])
   .unwrap();
+  info!("logger created and writing to: log.txt")
 }

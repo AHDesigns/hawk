@@ -3,91 +3,23 @@ use crossterm::Result as UiResult;
 use std::{thread, time::Duration};
 use threadpool::ThreadPool;
 
-mod buffers;
-mod logger;
-mod ui;
+extern crate num_cpus;
 
-use buffers::Buffer;
-use logger::*;
+mod ui;
+mod ux;
+
+use hawk::logger::*;
 use ui::Renderer;
 
-/// This struct holds the state of the app.
-struct App {
-  buffers: Vec<Buffer>,
-}
+use hawk::{
+  App, Direction,
+  HawkEvent::{self, *},
+};
 
-impl App {
-  fn new() -> Self {
-    App {
-      buffers: Vec::new(),
-    }
-  }
-
-  fn create_buffer(&mut self, name: String) {
-    self.buffers.push(Buffer::new(name));
-  }
-}
-
-#[derive(Debug)]
-pub enum Direction {
-  Up,
-  Down,
-  Forward,
-  Back,
-}
-
-#[derive(Debug)]
-pub enum HawkEvent {
-  Quit,
-  Insert(char),
-  Enter,
-  Delete,
-  Move(Direction),
-  Ping,
-  Slow,
-}
-
-mod ux {
-  use std::time::Duration;
-
-  use crossterm::event::{self, Event, KeyCode};
-  use log::warn;
-
-  use crate::HawkEvent::{self, *};
-
-  pub fn poll_user_input() -> Option<HawkEvent> {
-    if event::poll(Duration::from_millis(16)).unwrap() {
-      match event::read().unwrap() {
-        Event::Mouse(_) => None,
-        Event::Resize(w, h) => {
-          warn!("screen resized {} {}", w, h);
-          None
-        }
-        Event::Key(key) => match key.code {
-          KeyCode::Enter => Some(Enter),
-          KeyCode::Char('s') => Some(Slow),
-          KeyCode::Char('q') => Some(Quit),
-          KeyCode::Char(k) => Some(Insert(k)),
-          KeyCode::Backspace => Some(Delete),
-          _ => {
-            warn!("key was not handled {:?}", key);
-            None
-          }
-        },
-      }
-    } else {
-      None
-    }
-  }
-}
-
-struct Cursor {
+pub struct Cursor {
   pub row: u8,
   pub column: u8,
 }
-
-extern crate num_cpus;
-use HawkEvent::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   init_logger();
@@ -103,8 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let active_buffer: usize = 0;
   let mut cursor = Cursor { row: 0, column: 0 };
 
-  let (user_sender, event_reciever) = unbounded::<HawkEvent>();
-  let worker_sender = user_sender.clone();
+  let (worker_sender, event_reciever) = unbounded::<HawkEvent>();
 
   let n_workers = num_cpus::get() - 1;
 
@@ -183,17 +114,35 @@ fn handle_event(
     }
     Enter => {
       cursor.row += 1;
-      &buff.line_break();
-      renderer.redraw(buff)
+      buff.line_break();
+      renderer.redraw(buff, cursor)
     }
     Insert(k) => {
       cursor.column += 1;
       buff.append_text(k.to_string());
-      renderer.redraw(buff)
+      renderer.redraw(buff, cursor)
     }
     Delete => {
-      &buff.remove_text(cursor.row);
-      renderer.redraw(buff)
+      cursor.column -= 1;
+      buff.remove_text(cursor.row);
+      renderer.redraw(buff, cursor)
+    }
+    Move(direction) => {
+      match direction {
+        Direction::Up => {
+          cursor.row -= 1;
+        }
+        Direction::Down => {
+          cursor.row += 1;
+        }
+        Direction::Forward => {
+          cursor.column += 1;
+        }
+        Direction::Back => {
+          cursor.column -= 1;
+        }
+      }
+      renderer.redraw(buff, cursor)
     }
     _ => {
       warn!("unhandled Hawk event: {:?}", e);

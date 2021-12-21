@@ -1,12 +1,13 @@
-use crate::buffers::Buffer;
-use crossterm::cursor::{MoveTo, Show};
+use crate::Cursor;
+use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::style::Print;
 use crossterm::terminal::{
   self, disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnterAlternateScreen,
   LeaveAlternateScreen,
 };
 use crossterm::{ExecutableCommand, QueueableCommand};
-use log::{debug, info};
+use hawk::buffers::Buffer;
+use hawk::logger::{debug, info};
 use std::io::{self, Error, Stdout, Write};
 
 #[derive(Debug)]
@@ -34,6 +35,7 @@ impl Renderer {
     stdout
       .queue(EnterAlternateScreen)?
       .queue(DisableLineWrap)?
+      .queue(Hide)?
       .queue(Clear(ClearType::All))?
       .queue(MoveTo(0, 0))?
       .flush()?;
@@ -48,7 +50,7 @@ impl Renderer {
     Ok(())
   }
 
-  pub fn redraw(&mut self, buff: &Buffer) -> Result<(), Error> {
+  pub fn redraw(&mut self, buff: &Buffer, cursor: &Cursor) -> Result<(), Error> {
     self
       .stdout
       .queue(Clear(ClearType::All))?
@@ -65,8 +67,6 @@ impl Renderer {
         }
       };
 
-      debug!("printing to char {}", end);
-
       let visible_line = &line[0..end];
       self
         .stdout
@@ -74,6 +74,16 @@ impl Renderer {
         .unwrap()
         .queue(Print(visible_line))
         .unwrap();
+
+      // draw cursor
+      if i == cursor.row as usize {
+        self
+          .stdout
+          .queue(MoveTo(cursor.column as u16, i as u16))
+          .unwrap()
+          .queue(Print('_'))
+          .unwrap();
+      }
     });
 
     self.stdout.flush()?;
