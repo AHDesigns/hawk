@@ -12,7 +12,7 @@ pub fn poll_user_input() -> Option<HawkEvent> {
       Event::Mouse(_) => None,
       Event::Resize(w, h) => {
         warn!("screen resized {} {}", w, h);
-        None
+        Some(Resize((w, h)))
       }
       Event::Key(KeyEvent {
         modifiers: KeyModifiers::CONTROL,

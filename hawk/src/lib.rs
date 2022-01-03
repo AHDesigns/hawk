@@ -6,6 +6,7 @@ extern "C" {
 }
 
 pub mod buffers;
+mod display;
 pub mod logger;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -52,20 +53,33 @@ mod tests {
 }
 
 use buffers::Buffer;
+use display::Display;
+
 /// This struct holds the state of the app.
 pub struct App {
   pub buffers: Vec<Buffer>,
+  pub display: Display,
 }
 
 impl App {
-  pub fn new() -> Self {
+  pub fn new(default_buffers: Vec<Buffer>, screen_size: (u16, u16)) -> Self {
+    let initial_buffer = default_buffers
+      .get(0)
+      .expect("no initial_buffer passed")
+      .id();
+
     App {
-      buffers: Vec::new(),
+      buffers: default_buffers,
+      display: Display::new(screen_size.0, screen_size.1, initial_buffer),
     }
   }
 
+  pub fn default(screen_size: (u16, u16)) -> Self {
+    App::new(vec![Buffer::new("scratch".to_string(), None)], screen_size)
+  }
+
   pub fn create_buffer(&mut self, name: String) {
-    self.buffers.push(Buffer::new(name));
+    self.buffers.push(Buffer::new(name, None));
   }
 }
 
@@ -86,6 +100,7 @@ pub enum HawkEvent {
   Move(Direction),
   Ping,
   Slow,
+  Resize((u16, u16)),
 }
 
 mod util {
@@ -98,79 +113,6 @@ mod util {
   impl Pos {
     pub fn new(row: u8, column: u8) -> Self {
       Pos { row, column }
-    }
-  }
-}
-
-mod display {
-  use crate::util::Pos;
-  use std::rc::Rc;
-
-  use crate::buffers::Buffer;
-
-  struct Window {
-    id: u8,
-    buffer_ref: Rc<Buffer>,
-    // width: u8,
-    // height: u8,
-    // scroll_x: u8,
-    // scroll_y: u8,
-  }
-
-  impl Window {
-    fn new(id: u8, buffer: Rc<Buffer>) -> Self {
-      Window {
-        id,
-        buffer_ref: buffer,
-      }
-    }
-
-    fn get_char_positions(&self, c: char) -> Vec<Pos> {
-      self.buffer_ref.find_char_positions(c)
-    }
-  }
-
-  struct Display {
-    last_window_id: u8,
-    pub windows: Vec<Window>,
-  }
-
-  impl Display {
-    pub fn new(buffer_ref: Rc<Buffer>) -> Self {
-      let mut display = Display {
-        last_window_id: 0,
-        windows: Vec::new(),
-      };
-
-      let first_window = display.create_window(buffer_ref);
-
-      display.windows.push(first_window);
-
-      display
-    }
-
-    fn create_window(&mut self, buffer_ref: Rc<Buffer>) -> Window {
-      self.last_window_id += 1;
-
-      Window::new(self.last_window_id, buffer_ref)
-    }
-
-    fn get_window(&self, id: u8) -> Option<&Window> {
-      self.windows.iter().find(|w| w.id == id)
-    }
-
-    fn get_char_positions(&self, ch: char, window_id: Option<u8>) -> Vec<Pos> {
-      match window_id {
-        Some(id) => match self.get_window(id) {
-          Some(window) => window.get_char_positions(ch),
-          None => Vec::new(),
-        },
-        None => self
-          .windows
-          .iter()
-          .flat_map(|w| w.get_char_positions(ch))
-          .collect(),
-      }
     }
   }
 }

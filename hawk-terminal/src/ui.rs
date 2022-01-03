@@ -90,4 +90,8 @@ impl Renderer {
 
     Ok(())
   }
+
+  pub fn get_screen_size(&self) -> (u16, u16) {
+    terminal::size().expect("could not get terminal size")
+  }
 }

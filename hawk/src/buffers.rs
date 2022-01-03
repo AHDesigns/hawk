@@ -1,17 +1,44 @@
 use crate::util::Pos;
+use std::cell::Cell;
 use std::{fs::read_to_string, path::Path};
 
+mod modes {
+  pub enum Mode {
+    Simple,
+    Special,
+  }
+}
+
+thread_local!(static BUFFER_ID: Cell<usize> = Cell::new(0));
+
+use modes::Mode;
+
 pub struct Buffer {
+  id: usize,
   pub name: String,
   pub text: Vec<String>,
+  pub major_mode: Mode,
+  pub minor_modes: Vec<Mode>,
 }
 
 impl Buffer {
-  pub fn new(name: String) -> Self {
-    Buffer {
-      name,
-      text: Vec::new(),
-    }
+  pub fn id(&self) -> usize {
+    self.id
+  }
+
+  pub fn new(name: String, text: Option<Vec<String>>) -> Self {
+    BUFFER_ID.with(|t_id| {
+      let id = t_id.get();
+      t_id.set(id + 1);
+
+      Buffer {
+        name,
+        id,
+        text: text.or_else(|| Some(Vec::new())).unwrap(),
+        major_mode: Mode::Simple,
+        minor_modes: Vec::new(),
+      }
+    })
   }
 
   pub fn append_text(&mut self, txt: String) {
@@ -68,12 +95,12 @@ impl Buffer {
 
 pub fn open_buffer(path: &Path) -> Result<Buffer, String> {
   match read_to_string(path) {
-    Err(_) => Err(String::from(format!("could not read path: {:?}", path))),
-    Ok(buf) => Ok(Buffer {
+    Err(_) => Err(format!("could not read path: {:?}", path)),
+    Ok(buf) => Ok(Buffer::new(
       // the hell is this??
-      name: path.file_name().unwrap().to_owned().into_string().unwrap(),
-      text: buf.lines().map(|l| l.to_string()).collect(),
-    }),
+      path.file_name().unwrap().to_owned().into_string().unwrap(),
+      Some(buf.lines().map(|l| l.to_string()).collect()),
+    )),
   }
 }
 
@@ -83,7 +110,7 @@ mod tests {
 
   #[test]
   fn test_find_char_positions() {
-    let mut buffer = Buffer::new(String::from("name"));
+    let mut buffer = Buffer::new(String::from("name"), None);
     buffer.append_text("here is some text".to_string());
 
     assert_eq!(

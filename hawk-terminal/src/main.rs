@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut renderer = Renderer::new()?;
 
-  let mut app = App::new();
+  let mut app = App::default(renderer.get_screen_size());
 
   app.create_buffer("scratch".to_string());
 
@@ -142,6 +142,10 @@ fn handle_event(
           cursor.column -= 1;
         }
       }
+      renderer.redraw(buff, cursor)
+    }
+    Resize((w, h)) => {
+      app.display.resize(w, h);
       renderer.redraw(buff, cursor)
     }
     _ => {
