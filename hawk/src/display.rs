@@ -22,9 +22,7 @@ impl Window {
     }
   }
 
-    pub fn draw() {
-	
-    }
+  pub fn draw() {}
 
   pub fn resize(&mut self, width: u16, height: u16) {
     self.width = width;
@@ -36,6 +34,7 @@ impl Window {
       .iter()
       .find(|b| b.id() == self.buffer_ref)
       .expect("could not find buffer")
+      .content
       .find_char_positions(c)
   }
 }
@@ -48,9 +47,7 @@ pub struct Display {
 }
 
 impl Display {
-    pub fn draw(&self) {
-	
-    }
+  pub fn draw(&self) {}
   pub fn new(width: u16, height: u16, buffer_ref: usize) -> Self {
     let mut display = Display {
       width,
