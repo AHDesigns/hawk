@@ -1,6 +1,5 @@
-use crossbeam::channel::{unbounded, Sender};
-use crossterm::Result as UiResult;
-use std::{thread, time::Duration};
+use crossbeam::channel::unbounded;
+
 use threadpool::ThreadPool;
 
 extern crate num_cpus;
@@ -8,14 +7,10 @@ extern crate num_cpus;
 mod ui;
 mod ux;
 
-use hawk::{events::Context, logger::*};
+use hawk::logger::*;
 use ui::Renderer;
 
-use hawk::{
-  events::EventListener,
-  App,
-  HawkEvent::{self, *},
-};
+use hawk::{App, HawkEvent};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   init_logger();
@@ -67,72 +62,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   Ok(())
 }
-
-// fn handle_event(
-//   app: &mut App,
-//   pool: &ThreadPool,
-//   renderer: &mut Renderer,
-//   e: HawkEvent,
-//   active_buffer: usize,
-//   worker_sender: &Sender<HawkEvent>,
-//   cursor: &mut Cursor,
-// ) -> UiResult<()> {
-//   let buff = app.buffers.get_mut(active_buffer).unwrap();
-
-//   match e {
-//     Slow => {
-//       let sender = worker_sender.clone();
-
-//       pool.execute(move || {
-//         info!("spawned worker thread");
-
-//         thread::sleep(Duration::from_millis(5000));
-//         info!("done!");
-//         sender.send(Ping).unwrap();
-//       });
-
-//       Ok(())
-//     }
-//     Enter => {
-//       cursor.row += 1;
-//       buff.line_break();
-//       renderer.redraw(buff, cursor)
-//     }
-//     Insert(k) => {
-//       cursor.column += 1;
-//       buff.append_text(k.to_string());
-//       renderer.redraw(buff, cursor)
-//     }
-//     Delete => {
-//       cursor.column -= 1;
-//       buff.remove_text(cursor.row);
-//       renderer.redraw(buff, cursor)
-//     }
-//     Move(direction) => {
-//       match direction {
-//         Direction::Up => {
-//           cursor.row -= 1;
-//         }
-//         Direction::Down => {
-//           cursor.row += 1;
-//         }
-//         Direction::Forward => {
-//           cursor.column += 1;
-//         }
-//         Direction::Back => {
-//           cursor.column -= 1;
-//         }
-//       }
-//       renderer.redraw(buff, cursor)
-//     }
-//     Resize((w, h)) => {
-//       app.display.resize(w, h);
-//       renderer.redraw(buff, cursor)
-//     }
-//     _ => {
-//       warn!("unhandled Hawk event: {:?}", e);
-
-//       Ok(())
-//     }
-//   }
-// }

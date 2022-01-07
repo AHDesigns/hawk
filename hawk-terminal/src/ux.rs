@@ -18,18 +18,24 @@ pub fn poll_user_input() -> Option<HawkEvent> {
         code: KeyCode::Char('c'),
       }) => Some(Quit),
       Event::Key(key) => match key.code {
-        KeyCode::Enter => Some(Enter),
-        KeyCode::Tab => Some(Slow),
-        KeyCode::Backspace => Some(Delete),
         KeyCode::Char(k) => Some(Key(k)),
+        KeyCode::Enter => Some(Enter),
         KeyCode::Up => Some(Up),
         KeyCode::Down => Some(Down),
-        KeyCode::Right => Some(Forward),
-        KeyCode::Left => Some(Back),
-        _ => {
-          warn!("key was not handled {:?}", key);
-          None
-        }
+        KeyCode::Right => Some(Right),
+        KeyCode::Left => Some(Left),
+        KeyCode::Backspace => Some(Backspace),
+        KeyCode::Home => Some(Home),
+        KeyCode::End => Some(End),
+        KeyCode::PageUp => Some(PageUp),
+        KeyCode::PageDown => Some(PageDown),
+        KeyCode::Tab => Some(Tab),
+        KeyCode::BackTab => Some(BackTab),
+        KeyCode::Delete => Some(Delete),
+        KeyCode::Insert => Some(Insert),
+        KeyCode::F(n) => Some(F(n)),
+        KeyCode::Null => panic!("the hell is this?? {:?}", key),
+        KeyCode::Esc => Some(Esc),
       },
     }
   } else {

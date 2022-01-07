@@ -1,60 +1,14 @@
 mod buffers;
+mod commands;
 mod display;
+mod editor;
 pub mod events;
 pub mod logger;
+mod util;
 
 use display::Display;
-use events::*;
-
-mod editor {
-  use crate::buffers::{contents::Content, Buffer, BufferId};
-
-  struct IdGenerator {
-    last: BufferId,
-  }
-
-  impl IdGenerator {
-    pub fn default() -> Self {
-      IdGenerator { last: 0 }
-    }
-
-    pub fn next_id(&mut self) -> BufferId {
-      let last = self.last;
-      self.last += 1;
-      last
-    }
-  }
-
-  /// This is what the user is interacting with, and does most of the work
-  pub struct Editor {
-    buff_id: IdGenerator,
-    pub buffers: Vec<Buffer>,
-  }
-
-  impl Editor {
-    pub fn new() -> Self {
-      let mut buff_id = IdGenerator::default();
-
-      let buffers = vec![Buffer::new(
-        buff_id.next_id(),
-        "*scratch*".to_string(),
-        Content::default(),
-      )];
-
-      Self { buff_id, buffers }
-    }
-
-    pub fn create_buffer(&mut self) {
-      self.buffers.push(Buffer::new(
-        self.buff_id.next_id(),
-        "oijwef".to_string(),
-        Content::default(),
-      ));
-    }
-  }
-}
-
 use editor::Editor;
+use events::*;
 
 /// Holds the state of the application, handling the editor loop and
 /// deligating to the editor appropriately
@@ -90,47 +44,68 @@ impl App {
       editor: &mut self.editor,
     };
 
-    if let HawkEvent::Key(k) = e {
-      let keypress = &k.to_string();
-      self.event_handler.keymap_handler.handle(&mut ctx, keypress);
-    }
+    // again, yuk, will be clever later
+    let keypress = match e {
+      HawkEvent::Key(k) => String::from(k),
+      HawkEvent::Backspace => "Backspace".to_string(),
+      HawkEvent::Enter => "Enter".to_string(),
+      HawkEvent::Left => "Left".to_string(),
+      HawkEvent::Right => "Right".to_string(),
+      HawkEvent::Up => "Up".to_string(),
+      HawkEvent::Down => "Down".to_string(),
+      HawkEvent::Tab => "Tab".to_string(),
+      HawkEvent::Delete => "Delete".to_string(),
+      HawkEvent::Esc => "Esc".to_string(),
+      _ => panic!("no handler for event: {:?}", e),
+    };
+
+    self
+      .event_handler
+      .keymap_handler
+      .handle(&mut ctx, &keypress);
   }
 }
 
-#[derive(Debug)]
-pub enum Direction {
-  Up,
-  Down,
-  Forward,
-  Back,
-  None,
-}
-
+// TODO: copied a load from crossterm, can look into parsing or some From trait later
 #[derive(Debug)]
 pub enum HawkEvent {
   Quit,
   Key(char),
-  Enter,
-  Delete,
-  Ping,
-  Slow,
   Resize((u16, u16)),
+  /// Backspace key.
+  Backspace,
+  /// Enter key.
+  Enter,
+  /// Left arrow key.
+  Left,
+  /// Right arrow key.
+  Right,
+  /// Up arrow key.
   Up,
+  /// Down arrow key.
   Down,
-  Forward,
-  Back,
-}
-
-mod util {
-  #[derive(Debug, Eq, PartialEq)]
-  pub struct Pos {
-    pub row: u16,
-    pub column: u16,
-  }
-
-  impl Pos {
-    pub fn new(row: u16, column: u16) -> Self {
-      Pos { row, column }
-    }
-  }
+  /// Home key.
+  Home,
+  /// End key.
+  End,
+  /// Page up key.
+  PageUp,
+  /// Page dow key.
+  PageDown,
+  /// Tab key.
+  Tab,
+  /// Shift + Tab key.
+  BackTab,
+  /// Delete key.
+  Delete,
+  /// Insert key.
+  Insert,
+  /// F key.
+  ///
+  /// `KeyCode::F(1)` represents F1 key, etc.
+  F(u8),
+  /// Null.
+  Null,
+  /// Escape key.
+  Esc,
 }

@@ -1,38 +1,24 @@
 use std::collections::HashMap;
 
-use log::{debug, info};
+use log::debug;
 
 use crate::editor::Editor;
+use keymaps::{Keymap, KeymapId};
+
+mod keymaps;
 
 // TEMP
 struct FundamentalMode {}
-
-#[macro_export]
-macro_rules! insert_self {
-  ( $( $x:expr ),* ) => {
-    {
-
-      let mut keymap: crate::events::Keymap = HashMap::new();
-
-      $(
-	keymap.insert($x.to_string(), Box::new(|ctx: &mut Context| {
-	  // TODO: obviously a quick dirty hack
-	  ctx.editor.buffers.get_mut(0).unwrap().insert($x);
-	}));
-      )*
-	keymap
-    }
-  };
-}
 
 impl FiletypeHandler for FundamentalMode {
   fn handle_key(&self, keypress: String) {
     println!("{}", keypress);
   }
 }
-
 // TEMP
 
+/// A mutable struct passed to event handlers to allow manipulation of
+/// app state
 pub struct Context<'a> {
   pub editor: &'a mut Editor,
 }
@@ -62,13 +48,7 @@ impl EventListener {
       KeymapId {
         id: "global".to_string(),
       },
-      insert_self!(
-        "#", "1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "0", "-", "=", "±", "!", "@",
-        "£", "$", "%", "^", "&", "*", "(", ")", "_", "+", "q", "w", "e", "r", "t", "y", "u", "i",
-        "o", "p", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "\\", ":", "[", "]", "{",
-        "}", "`", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "~", "?", "'", "|", "<", ">",
-        "?", " "
-      ),
+      keymaps::create_default_global_keymap(),
     );
 
     el
@@ -80,8 +60,6 @@ pub struct EventHandler {}
 pub trait FiletypeHandler {
   fn handle_key(&self, keypress: String);
 }
-
-pub type Keymap = HashMap<String, Box<fn(&mut Context)>>;
 
 pub struct KeymapHandler {
   /// default bindings, often insert_self
@@ -114,11 +92,6 @@ impl KeymapHandler {
   pub fn register_keymap(&mut self, keymap_id: KeymapId, keymap: Keymap) {
     self.keymaps.insert(keymap_id, keymap);
   }
-}
-
-#[derive(PartialEq, Eq, Hash)]
-pub struct KeymapId {
-  pub id: String,
 }
 
 #[cfg(test)]
