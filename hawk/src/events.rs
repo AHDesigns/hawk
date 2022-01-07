@@ -7,25 +7,44 @@ use crate::editor::Editor;
 // TEMP
 struct FundamentalMode {}
 
+#[macro_export]
+macro_rules! insert_self {
+  ( $( $x:expr ),* ) => {
+    {
+
+      let mut keymap: crate::events::Keymap = HashMap::new();
+
+      $(
+	keymap.insert($x.to_string(), Box::new(|ctx: &mut Context| {
+	  // TODO: obviously a quick dirty hack
+	  ctx.editor.buffers.get_mut(0).unwrap().insert($x);
+	}));
+      )*
+	keymap
+    }
+  };
+}
+
 impl FiletypeHandler for FundamentalMode {
   fn handle_key(&self, keypress: String) {
     println!("{}", keypress);
   }
 }
+
 // TEMP
 
 pub struct Context<'a> {
   pub editor: &'a mut Editor,
 }
 
-pub struct EventListener<'a> {
+pub struct EventListener {
   pub event_handler: EventHandler,
-  pub keymap_handler: KeymapHandler<'a>,
+  pub keymap_handler: KeymapHandler,
 }
 
-impl<'a> EventListener<'a> {
+impl EventListener {
   pub fn default() -> Self {
-    EventListener {
+    let mut el = EventListener {
       event_handler: EventHandler {},
       keymap_handler: KeymapHandler {
         global: KeymapId {
@@ -37,7 +56,22 @@ impl<'a> EventListener<'a> {
         }],
         keymaps: HashMap::new(),
       },
-    }
+    };
+
+    el.keymap_handler.keymaps.insert(
+      KeymapId {
+        id: "global".to_string(),
+      },
+      insert_self!(
+        "#", "1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "0", "-", "=", "±", "!", "@",
+        "£", "$", "%", "^", "&", "*", "(", ")", "_", "+", "q", "w", "e", "r", "t", "y", "u", "i",
+        "o", "p", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "\\", ":", "[", "]", "{",
+        "}", "`", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "~", "?", "'", "|", "<", ">",
+        "?", " "
+      ),
+    );
+
+    el
   }
 }
 
@@ -47,9 +81,9 @@ pub trait FiletypeHandler {
   fn handle_key(&self, keypress: String);
 }
 
-pub type Keymap<'a> = HashMap<&'static str, &'a dyn Fn(Context)>;
+pub type Keymap = HashMap<String, Box<fn(&mut Context)>>;
 
-pub struct KeymapHandler<'a> {
+pub struct KeymapHandler {
   /// default bindings, often insert_self
   pub global: KeymapId,
   /// current filetype based on extension or shebang, used to
@@ -58,18 +92,18 @@ pub struct KeymapHandler<'a> {
   /// position
   pub filetype_handler: Box<dyn FiletypeHandler>,
   pub minor: Vec<KeymapId>,
-  pub keymaps: HashMap<KeymapId, Keymap<'a>>,
+  pub keymaps: HashMap<KeymapId, Keymap>,
 }
 
-impl<'a> KeymapHandler<'a> {
-  pub fn handle(&'a self, context: Context, keypress: &str) {
+impl KeymapHandler {
+  pub fn handle(&self, context: &mut Context, keypress: &str) {
     debug!("key press {}", &keypress);
     // self.filetype_handler.handle_key()
 
     if let Some(f) = self
       .keymaps
       .get(&KeymapId {
-        id: "foo".to_string(),
+        id: "global".to_string(),
       })
       .and_then(|f| f.get(keypress))
     {
@@ -77,9 +111,8 @@ impl<'a> KeymapHandler<'a> {
     }
   }
 
-  pub fn register_keymap(&'a mut self, keymap_id: KeymapId, keymap: Keymap<'a>) -> &Self {
+  pub fn register_keymap(&mut self, keymap_id: KeymapId, keymap: Keymap) {
     self.keymaps.insert(keymap_id, keymap);
-    self
   }
 }
 
@@ -94,7 +127,7 @@ mod tests {
 
   use super::*;
 
-  fn do_stuff(ctx: Context) {
+  fn do_stuff(ctx: &mut Context) {
     ctx.editor.create_buffer();
   }
 
@@ -116,11 +149,14 @@ mod tests {
     };
 
     let mut keymap: Keymap = HashMap::new();
-    keymap.insert("hi", &do_stuff);
+    keymap.insert("c".to_string(), Box::new(do_stuff));
 
     let fh = FH {};
 
-    app.register_keymap(keymap_id, keymap);
+    app
+      .event_handler
+      .keymap_handler
+      .register_keymap(keymap_id, keymap);
 
     app.handle_event(HawkEvent::Key('c'));
 

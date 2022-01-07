@@ -58,12 +58,12 @@ impl Renderer {
       .queue(Clear(ClearType::All))?
       .queue(MoveTo(0, 0))?;
 
-    let buff = app.buffers.get(0).unwrap();
+    let buff = app.editor.buffers.get(0).unwrap();
 
     buff
       .content
       .text()
-      .split("\n")
+      .split('\n')
       .enumerate()
       .for_each(|(i, line)| {
         let end = {

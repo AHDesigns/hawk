@@ -155,6 +155,10 @@ impl Buffer {
   pub fn default(id: BufferId) -> Self {
     Buffer::new(id, format!("buffer-{}", &id), Content::default())
   }
+
+  pub fn insert(&mut self, text: &str) {
+    self.content.append_text(text.to_string());
+  }
 }
 
 #[cfg(test)]
