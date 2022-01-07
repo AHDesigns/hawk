@@ -3,6 +3,8 @@ pub mod contents {
 
   use crate::util::Pos;
 
+  use super::BufferId;
+
   extern "C" {
     fn tree_sitter_javascript() -> Language;
   }
@@ -29,7 +31,7 @@ pub mod contents {
     }
 
     pub fn text(&self) -> String {
-      self.text.join("")
+      self.text.join("\n")
     }
 
     pub fn default() -> Self {
@@ -53,7 +55,7 @@ pub mod contents {
 
     pub fn remove_text(&mut self, line: u16) {
       if !self.text.is_empty() {
-        if let Some(ln) = self.text.get_mut(line as usize) {
+        if let Some(ln) = self.text.get_mut(BufferId::from(line)) {
           ln.pop();
         }
       }
@@ -133,22 +135,24 @@ pub mod contents {
 
 use self::contents::Content;
 
+pub type BufferId = usize;
+
 pub struct Buffer {
-  id: usize,
+  id: BufferId,
   name: String,
   pub content: contents::Content,
 }
 
 impl Buffer {
-  pub fn id(&self) -> usize {
+  pub fn id(&self) -> BufferId {
     self.id
   }
 
-  pub fn new(id: usize, name: String, content: Content) -> Self {
+  pub fn new(id: BufferId, name: String, content: Content) -> Self {
     Buffer { name, id, content }
   }
 
-  pub fn default(id: usize) -> Self {
+  pub fn default(id: BufferId) -> Self {
     Buffer::new(id, format!("buffer-{}", &id), Content::default())
   }
 }

@@ -1,4 +1,3 @@
-use crate::Cursor;
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::style::Print;
 use crossterm::terminal::{
@@ -6,8 +5,8 @@ use crossterm::terminal::{
   LeaveAlternateScreen,
 };
 use crossterm::{ExecutableCommand, QueueableCommand};
-use hawk::buffers::Buffer;
 use hawk::logger::{debug, info};
+use hawk::App;
 use std::io::{self, Error, Stdout, Write};
 
 #[derive(Debug)]
@@ -50,41 +49,41 @@ impl Renderer {
     Ok(())
   }
 
-  pub fn redraw(&mut self, buff: &Buffer, cursor: &Cursor) -> Result<(), Error> {
+  pub fn redraw(&mut self, app: &App) -> Result<(), Error> {
+    // starting by just repainting whole terminal for now, will improve later
+
+    // clear terminal
     self
       .stdout
       .queue(Clear(ClearType::All))?
       .queue(MoveTo(0, 0))?;
 
-    buff.text.iter().enumerate().for_each(|(i, line)| {
-      let end = {
-        let size = line.len();
-        let last_char = self.frame_size.columns as usize;
-        if size > last_char {
-          last_char
-        } else {
-          size
-        }
-      };
+    let buff = app.buffers.get(0).unwrap();
 
-      let visible_line = &line[0..end];
-      self
-        .stdout
-        .queue(MoveTo(0, i as u16))
-        .unwrap()
-        .queue(Print(visible_line))
-        .unwrap();
+    buff
+      .content
+      .text()
+      .split("\n")
+      .enumerate()
+      .for_each(|(i, line)| {
+        let end = {
+          let size = line.len();
+          let last_char = self.frame_size.columns as usize;
+          if size > last_char {
+            last_char
+          } else {
+            size
+          }
+        };
 
-      // draw cursor
-      if i == cursor.row as usize {
+        let visible_line = &line[0..end];
         self
           .stdout
-          .queue(MoveTo(cursor.column as u16, i as u16))
+          .queue(MoveTo(0, i as u16))
           .unwrap()
-          .queue(Print('_'))
+          .queue(Print(visible_line))
           .unwrap();
-      }
-    });
+      });
 
     self.stdout.flush()?;
 

@@ -3,7 +3,6 @@ use std::time::Duration;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use hawk::logger::warn;
 
-use hawk::Direction::*;
 use hawk::HawkEvent::{self, *};
 
 pub fn poll_user_input() -> Option<HawkEvent> {
@@ -22,11 +21,11 @@ pub fn poll_user_input() -> Option<HawkEvent> {
         KeyCode::Enter => Some(Enter),
         KeyCode::Tab => Some(Slow),
         KeyCode::Backspace => Some(Delete),
-        KeyCode::Char(k) => Some(Insert(k)),
-        KeyCode::Up => Some(Move(Up)),
-        KeyCode::Down => Some(Move(Down)),
-        KeyCode::Right => Some(Move(Forward)),
-        KeyCode::Left => Some(Move(Back)),
+        KeyCode::Char(k) => Some(Key(k)),
+        KeyCode::Up => Some(Up),
+        KeyCode::Down => Some(Down),
+        KeyCode::Right => Some(Forward),
+        KeyCode::Left => Some(Back),
         _ => {
           warn!("key was not handled {:?}", key);
           None
