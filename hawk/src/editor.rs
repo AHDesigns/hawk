@@ -43,4 +43,8 @@ impl Editor {
       Content::default(),
     ));
   }
+
+  pub fn get_active_buffer(&mut self) -> &mut Buffer {
+    self.buffers.get_mut(0).unwrap()
+  }
 }

@@ -1,5 +1,5 @@
-use super::Context;
 use crate::commands;
+use crate::Context;
 use std::collections::HashMap;
 
 pub type Keymap = HashMap<String, Box<fn(&mut Context)>>;
@@ -13,8 +13,7 @@ macro_rules! insert_self {
 
       $(
 	keymap.insert($x.to_string(), Box::new(|ctx: &mut Context| {
-	  // TODO: obviously a quick dirty hack
-	  ctx.editor.buffers.get_mut(0).unwrap().insert($x);
+	  ctx.editor.get_active_buffer().insert($x);
 	}));
       )*
 	keymap

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::debug;
 
-use crate::editor::Editor;
+use crate::Context;
 use keymaps::{Keymap, KeymapId};
 
 mod keymaps;
@@ -16,12 +16,6 @@ impl FiletypeHandler for FundamentalMode {
   }
 }
 // TEMP
-
-/// A mutable struct passed to event handlers to allow manipulation of
-/// app state
-pub struct Context<'a> {
-  pub editor: &'a mut Editor,
-}
 
 pub struct EventListener {
   pub event_handler: EventHandler,

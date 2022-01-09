@@ -10,6 +10,12 @@ use display::Display;
 use editor::Editor;
 use events::*;
 
+/// A mutable struct passed to event handlers to allow manipulation of
+/// app state
+pub struct Context<'a> {
+  pub editor: &'a mut Editor,
+}
+
 /// Holds the state of the application, handling the editor loop and
 /// deligating to the editor appropriately
 pub struct App {
